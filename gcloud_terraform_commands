@@ -28,3 +28,20 @@ brew tap hashicorp/tap
 brew install hashicorp/tap/terraform
 
 
+
+
+
+
+# Debian Apache installation
+sudo apt install apache2
+sudo service apache2 status
+
+http://34.170.129.119/
+cd /var/www/html # Apache Directory
+index.html is the website
+
+Compute Engine > Images > Instance Templates > Managed Instance Groups
+
+
+# To add load to the autoscaled server (on terminal)
+dd if=/dev/zero of=/dev/null &

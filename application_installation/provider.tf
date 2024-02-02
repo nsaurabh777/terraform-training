@@ -14,6 +14,36 @@ resource "google_compute_subnetwork" "default" {
 	region = "us-central1"
 	network = google_compute_network.vpc_network.id
 }
+
+
+resource "google_compute_firewall" "allow-ingress" {
+  name    = "allow-ingress"
+  network = google_compute_network.vpc_network.name
+
+  allow {
+		protocol = "icmp"
+	}
+
+  allow {
+    protocol = "tcp"
+    ports    = ["22", "80", "443"]
+  }
+
+  source_ranges = ["0.0.0.0/0"]
+}
+
+resource "google_compute_network" "default" {
+  name = "test-network"
+}
+
+/*
+resource "null_resource" "generate_ssh_key" {
+  provisioner "local-exec" {
+    command = "./generate_ssh_key.sh"
+  }
+}
+*/
+
 # Create a single Compute Engine Instance
 resource "google_compute_instance" "default" {
 	# name = "flask-vm"
@@ -27,9 +57,35 @@ resource "google_compute_instance" "default" {
 			image = "centos-7-v20240110"
 		}
 	}
+	
 	# Install Flask
 	# metadata_startup_script = "sudo apt-get update; sudo apt-get install -yq build-essential python3-pip rsync; pip install flask"
-	metadata_startup_script = "yum -y update; yum install httpd; systemctl start httpd; systemctl enable httpd; firewall-cmd --zone=public --permanent --add-service=http; firewall-cmd --zone=public --permanent --add-service=https; firewall-cmd --reload"
+	
+	# Install Apache
+	metadata_startup_script = "sudo yum -y install httpd; sudo yum install httpd; sudo systemctl start httpd; sudo systemctl enable httpd; sudo firewall-cmd --zone=public --permanent --add-service=http; sudo firewall-cmd --zone=public --permanent --add-service=https; sudo firewall-cmd --reload"
+
+	/*
+	metadata = {
+		ssh-keys = "centos:${file("~/.ssh/id_rsa.pub")}"
+	}
+
+	connection {
+		type        = "ssh"
+		user        = "centos"
+		private_key = file("~/.ssh/id_rsa")
+		host        = google_compute_instance.default.network_interface.0.access_config.0.nat_ip
+		password    = ""
+	}
+
+	provisioner "remote-exec" {
+	    inline = [
+			"sudo yum -y install httpd",
+			"sudo systemctl enable httpd",
+			"sudo systemctl start httpd"
+	    ]
+  	}
+  	*/
+
 	network_interface {
 		subnetwork = google_compute_subnetwork.default.id
 		access_config {
