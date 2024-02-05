@@ -40,8 +40,40 @@ http://34.170.129.119/
 cd /var/www/html # Apache Directory
 index.html is the website
 
+
+
+# For AutoScaling
 Compute Engine > Images > Instance Templates > Managed Instance Groups
 
-
-# To add load to the autoscaled server (on terminal)
+## To add load to the autoscaled server (on terminal)
 dd if=/dev/zero of=/dev/null &
+
+
+
+# Taint - Remove and replace
+terraform taint google_cloud_instance.us_instance
+
+# State
+terraform state list
+
+# Refresh
+terraform refresh
+
+# Rename
+terraform state mv vm1.oldname vm1.newname
+
+# Pull
+terraform state pull
+
+# Push
+terraform state push
+
+# Delete
+terraform state rm
+
+# Show the resource from the state file
+terraform state show <resourcename>
+
+# Workspaces
+- terraform workspace show
+- 

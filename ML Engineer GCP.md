@@ -148,3 +148,245 @@ http://34.83.48.218:8080/
 
 # Delete cluster
 gcloud container clusters delete lab-cluster
+
+
+
+# Load Balancers
+gcloud auth list
+gcloud config list project
+
+gcloud config set compute/region europe-west1
+gcloud config set compute/zone europe-west1-c
+
+## Create a virtual machine www1 in your default zone using the following code:
+gcloud compute instances create www1 \
+    --zone=europe-west1-c \
+    --tags=network-lb-tag \
+    --machine-type=e2-small \
+    --image-family=debian-11 \
+    --image-project=debian-cloud \
+    --metadata=startup-script='#!/bin/bash
+      apt-get update
+      apt-get install apache2 -y
+      service apache2 restart
+      echo "
+<h3>Web Server: www1</h3>" | tee /var/www/html/index.html'
+
+
+## Create a virtual machine www2 in your default zone using the following code:
+  gcloud compute instances create www2 \
+    --zone=europe-west1-c \
+    --tags=network-lb-tag \
+    --machine-type=e2-small \
+    --image-family=debian-11 \
+    --image-project=debian-cloud \
+    --metadata=startup-script='#!/bin/bash
+      apt-get update
+      apt-get install apache2 -y
+      service apache2 restart
+      echo "
+<h3>Web Server: www2</h3>" | tee /var/www/html/index.html'
+
+## Create a virtual machine www3 in your default zone.
+  gcloud compute instances create www3 \
+    --zone=europe-west1-c  \
+    --tags=network-lb-tag \
+    --machine-type=e2-small \
+    --image-family=debian-11 \
+    --image-project=debian-cloud \
+    --metadata=startup-script='#!/bin/bash
+      apt-get update
+      apt-get install apache2 -y
+      service apache2 restart
+      echo "
+<h3>Web Server: www3</h3>" | tee /var/www/html/index.html'
+
+## Create a firewall rule to allow external traffic to the VM instances:
+gcloud compute firewall-rules create www-firewall-network-lb \
+    --target-tags network-lb-tag --allow tcp:80
+
+
+gcloud compute instances list
+curl http://35.195.97.190
+
+
+## Create a static external IP address for your load balancer:
+gcloud compute addresses create network-lb-ip-1 \
+  --region europe-west1
+
+## Add a legacy HTTP health check resource:
+gcloud compute http-health-checks create basic-check
+
+## Add a target pool in the same region as your instances. Run the following to create the target pool and use the health check, which is required for the service to function
+gcloud compute target-pools create www-pool \
+  --region europe-west1 --http-health-check basic-check
+
+## Add the instances to the pool
+gcloud compute target-pools add-instances www-pool \
+    --instances www1,www2,www3
+
+## Add a forwarding rule
+gcloud compute forwarding-rules create www-rule \
+    --region  europe-west1 \
+    --ports 80 \
+    --address network-lb-ip-1 \
+    --target-pool www-pool
+
+## Enter the following command to view the external IP address of the www-rule forwarding rule used by the load balancer:
+gcloud compute forwarding-rules describe www-rule --region europe-west1
+
+## Access the external IP address
+IPADDRESS=$(gcloud compute forwarding-rules describe www-rule --region europe-west1 --format="json" | jq -r .IPAddress)
+
+## Show the external IP address
+echo $IPADDRESS
+
+## Use curl command to access the external IP address, replacing IP_ADDRESS with an external IP address from the previous command:
+while true; do curl -m1 $IPADDRESS; done
+
+# Create an HTTP load balancer
+## First, create the load balancer template:
+gcloud compute instance-templates create lb-backend-template \
+   --region=europe-west1 \
+   --network=default \
+   --subnet=default \
+   --tags=allow-health-check \
+   --machine-type=e2-medium \
+   --image-family=debian-11 \
+   --image-project=debian-cloud \
+   --metadata=startup-script='#!/bin/bash
+     apt-get update
+     apt-get install apache2 -y
+     a2ensite default-ssl
+     a2enmod ssl
+     vm_hostname="$(curl -H "Metadata-Flavor:Google" \
+     http://169.254.169.254/computeMetadata/v1/instance/name)"
+     echo "Page served from: $vm_hostname" | \
+     tee /var/www/html/index.html
+     systemctl restart apache2'
+
+## Managed instance groups (MIGs) let you operate apps on multiple identical VMs. You can make your workloads scalable and highly available by taking advantage of automated MIG services, including: autoscaling, autohealing, regional (multiple zone) deployment, and automatic updating.
+## Create a managed instance group based on the template:
+gcloud compute instance-groups managed create lb-backend-group \
+   --template=lb-backend-template --size=2 --zone=europe-west1-c
+
+## Create the fw-allow-health-check firewall rule.
+gcloud compute firewall-rules create fw-allow-health-check \
+  --network=default \
+  --action=allow \
+  --direction=ingress \
+  --source-ranges=130.211.0.0/22,35.191.0.0/16 \
+  --target-tags=allow-health-check \
+  --rules=tcp:80
+
+## Now that the instances are up and running, set up a global static external IP address that your customers use to reach your load balancer:
+gcloud compute addresses create lb-ipv4-1 \
+  --ip-version=IPV4 \
+  --global
+
+## Note the IPv4 address that was reserved:
+gcloud compute addresses describe lb-ipv4-1 \
+  --format="get(address)" \
+  --global
+
+## Create a health check for the load balancer:
+gcloud compute health-checks create http http-basic-check \
+  --port 80
+
+## Create a backend service:
+gcloud compute backend-services create web-backend-service \
+  --protocol=HTTP \
+  --port-name=http \
+  --health-checks=http-basic-check \
+  --global
+
+## Add your instance group as the backend to the backend service
+gcloud compute backend-services add-backend web-backend-service \
+  --instance-group=lb-backend-group \
+  --instance-group-zone=europe-west1-c \
+  --global
+
+## Create a URL map to route the incoming requests to the default backend service:
+gcloud compute url-maps create web-map-http \
+    --default-service web-backend-service
+
+## Create a target HTTP proxy to route requests to your URL map:
+gcloud compute target-http-proxies create http-lb-proxy \
+    --url-map web-map-http
+
+## Create a global forwarding rule to route incoming requests to the proxy:
+gcloud compute forwarding-rules create http-content-rule \
+   --address=lb-ipv4-1\
+   --global \
+   --target-http-proxy=http-lb-proxy \
+   --ports=80
+
+# Testing traffic sent to your instances
+
+
+# Predicting Visitor Purchases using Bigquery ML
+
+
+# Entity and Sentiment Analysis with the Natural Language API
+Navigation menu > APIs & Services > Credentials.
+Create API Key
+SSH into the VM
+`export API_KEY=<YOUR_API_KEY>`
+Add a file `request.json`:
+```json
+{
+  "document":{
+    "type":"PLAIN_TEXT",
+    "content":"Joanne Rowling, who writes under the pen names J. K. Rowling and Robert Galbraith, is a British novelist and screenwriter who wrote the Harry Potter fantasy series."
+  },
+  "encodingType":"UTF8"
+}
+```
+curl "https://language.googleapis.com/v1/documents:analyzeEntities?key=${API_KEY}" \
+  -s -X POST -H "Content-Type: application/json" --data-binary @request.json > result.json
+cat result.json
+
+```json
+{
+  "document":{
+    "type":"PLAIN_TEXT",
+    "content":"Harry Potter is the best book. I think everyone should read it."
+  },
+  "encodingType": "UTF8"
+}
+```
+curl "https://language.googleapis.com/v1/documents:analyzeSentiment?key=${API_KEY}" \
+  -s -X POST -H "Content-Type: application/json" --data-binary @request.json
+
+```json
+{
+  "document":{
+    "type":"PLAIN_TEXT",
+    "content":"I liked the sushi but the service was terrible."
+  },
+  "encodingType": "UTF8"
+}
+```
+curl "https://language.googleapis.com/v1/documents:analyzeEntitySentiment?key=${API_KEY}" \
+  -s -X POST -H "Content-Type: application/json" --data-binary @request.json
+```json
+{
+  "document":{
+    "type":"PLAIN_TEXT",
+    "content": "Joanne Rowling is a British novelist, screenwriter and film producer."
+  },
+  "encodingType": "UTF8"
+}
+```
+curl "https://language.googleapis.com/v1/documents:analyzeSyntax?key=${API_KEY}" \
+  -s -X POST -H "Content-Type: application/json" --data-binary @request.json
+```json
+{
+  "document":{
+    "type":"PLAIN_TEXT",
+    "content":"日本のグーグルのオフィスは、東京の六本木ヒルズにあります"
+  }
+}
+```
+curl "https://language.googleapis.com/v1/documents:analyzeEntities?key=${API_KEY}" \
+  -s -X POST -H "Content-Type: application/json" --data-binary @request.json
