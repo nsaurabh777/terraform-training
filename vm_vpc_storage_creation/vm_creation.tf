@@ -11,7 +11,7 @@ resource "google_compute_instance" "my_instance" {
   }
 
   network_interface {
-    network = google_compute_network.my_network.self_link
+    network    = google_compute_network.my_network.self_link
     subnetwork = google_compute_subnetwork.subnet_zone_a.self_link
   }
 
@@ -43,6 +43,6 @@ output "vm_ip" {
 */
 
 output "vm_details" {
-  value = google_compute_instance.my_instance
+  value     = google_compute_instance.my_instance
   sensitive = true
 }
