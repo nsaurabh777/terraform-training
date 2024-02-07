@@ -14,6 +14,7 @@ resource "google_compute_instance" "my_instance" {
     network    = google_compute_network.my_network.self_link
     subnetwork = google_compute_subnetwork.subnet_zone_a.self_link
   }
+  depends_on = [google_compute_subnetwork.subnet_zone_a]
 
   /*
   # Allow RDP from any source
