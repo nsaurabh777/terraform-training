@@ -2,6 +2,11 @@
 resource "google_storage_bucket" "my_bucket" {
   name     = "terraform-training-bucket-01"
   location = "us-central1"
+
+  # Used by GCS to know it is managed by terraform - Remote State Files
+  versioning {
+    enabled = true
+  }
 }
 
 # Get bucket metadata

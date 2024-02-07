@@ -89,6 +89,13 @@ terraform output -json
 terraform output instance_ip_addr # instance_ip_addr is output name
 
 
+# Graph (https://dreampuf.github.io/GraphvizOnline/)
+terraform graph
+# Paste the output to the website
 
+terraform plan -out=tfplan
+terraform graph -plan=tfplan
 
+# Export log file to a path
+export TF_LOG_PATH=/path/to/log/file
 
