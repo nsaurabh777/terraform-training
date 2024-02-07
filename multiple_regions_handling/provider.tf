@@ -1,5 +1,5 @@
 provider "google" {
-  alias = "us"
+  alias       = "us"
   project     = "cool-discipline-186213"
   region      = "us-west1"
   zone        = "us-west1-b"
@@ -7,7 +7,7 @@ provider "google" {
 }
 
 provider "google" {
-  alias = "eu"
+  alias       = "eu"
   project     = "cool-discipline-186213"
   region      = "europe-west1"
   zone        = "europe-west1-b"
