@@ -76,4 +76,19 @@ terraform state show <resourcename>
 
 # Workspaces
 - terraform workspace show
-- 
+- terraform workspace new new_space_01
+- terraform workspace select default
+
+# Providers
+terraform providers
+
+# Output
+terraform output
+terraform output -state=<path>
+terraform output -json
+terraform output instance_ip_addr # instance_ip_addr is output name
+
+
+
+
+

@@ -42,7 +42,13 @@ output "vm_ip" {
 }
 */
 
+/*
 output "vm_details" {
   value     = google_compute_instance.my_instance
   sensitive = true
+}
+*/
+
+output "instance_ip_addr" {
+  value = google_compute_instance.my_instance.network_interface.0.network_ip
 }
