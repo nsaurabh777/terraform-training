@@ -1,13 +1,13 @@
 variable "region_local" {
-  type = string
+  type        = string
   description = "region name"
-  default = "us-central1"
+  default     = "us-central1"
 }
 
 variable "machine_type_local" {
-  type = string
+  type        = string
   description = "machine type"
-  default = "e2-micro"
+  default     = "e2-micro"
 }
 
 locals {
@@ -15,9 +15,9 @@ locals {
 }
 
 resource "google_compute_instance" "example_local" {
-  name = "my-local-vars-instance"
+  name         = "my-local-vars-instance"
   machine_type = var.machine_type_local
-  zone = local.zone
+  zone         = local.zone
   boot_disk {
     initialize_params {
       image = "debian-cloud/debian-10"
