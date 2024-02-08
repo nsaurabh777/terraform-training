@@ -4,8 +4,8 @@ variable "create_instance" {
 }
 
 resource "google_compute_instance" "bool_instance" {
-  count = var.create_instance ? 1 : 0
-  name = "my-bool-instance"
+  count        = var.create_instance ? 1 : 0
+  name         = "my-bool-instance"
   machine_type = "e2-micro"
   zone         = "us-central1-a"
   boot_disk {
