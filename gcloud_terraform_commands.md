@@ -96,6 +96,8 @@ terraform graph
 terraform plan -out=tfplan
 terraform graph -plan=tfplan
 
+# Remote State
+
 # Export log file to a path
 export TF_LOG_PATH=/path/to/log/file
 
