@@ -12,7 +12,7 @@ resource "google_compute_instance_template" "frontend_template" {
 
   # Network interface configuration
   network_interface {
-    network = "default"  # Replace with your network name if needed
+    network = "default" # Replace with your network name if needed
     access_config {}
   }
 }
@@ -32,7 +32,7 @@ resource "google_compute_instance_template" "backend_template" {
 
   # Network interface configuration
   network_interface {
-    network = "default"  # Replace with your network name if needed
+    network = "default" # Replace with your network name if needed
     access_config {}
   }
 }
