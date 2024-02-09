@@ -58,5 +58,11 @@ resource "google_compute_firewall" "allow_access_from_bastion" {
 # }
 
 
+# Add the roles to the IAM SVC account:
+# - IAP-secured Tunnel User
+# - Project IAM Admin
+# - Role Administrator
+# - Security Admin
+
 # gcloud compute ssh --zone "us-central1-a" "bastion-vm" --tunnel-through-iap --project "cool-discipline-186213"
 
